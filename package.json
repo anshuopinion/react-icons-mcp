@@ -17,6 +17,7 @@
     "start": "node dist/cli.js",
     "start:cli": "cross-env NODE_ENV=cli node dist/cli.js",
     "start:http": "node dist/cli.js",
+    "health-check": "node dist/health-check.js",
     "dev": "cross-env NODE_ENV=development tsup --watch",
     "dev:cli": "cross-env NODE_ENV=development tsup --watch -- --stdio",
     "lint": "eslint . --ext .ts",
@@ -47,6 +48,7 @@
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "js-yaml": "^4.1.0",
+    "node-fetch": "^3.3.2",
     "react-icons": "^5.5.0",
     "yargs": "^17.7.2",
     "zod": "^3.22.4"
