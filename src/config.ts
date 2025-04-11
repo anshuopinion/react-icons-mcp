@@ -26,11 +26,11 @@ export function getServerConfig(isStdioMode: boolean): ServerConfig {
       },
     })
     .help()
-    .version("0.1.0")
+    .version("0.1.15")
     .parseSync() as CliArgs;
 
   const config: ServerConfig = {
-    port: 3334,
+    port: 3333,
     configSources: {
       port: "default",
     },
