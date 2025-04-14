@@ -3,9 +3,7 @@ import {iconsLib} from "./data.js";
 import {Logger} from "~/server.js";
 
 export interface IconMetadata {
-	packageName: string;
 	iconName: string;
-	fullName: string;
 	svgPath?: string;
 }
 
@@ -89,9 +87,7 @@ export class IconService {
 					(packagePrefix === "io5" && key.startsWith("Io"))
 				) {
 					icons.push({
-						packageName: packagePrefix,
 						iconName: key,
-						fullName: `${packagePrefix}/${key}`,
 					});
 				}
 			}
@@ -166,9 +162,7 @@ export class IconService {
 			}
 
 			return {
-				packageName,
 				iconName,
-				fullName: `${packageName}/${iconName}`,
 				// We don't extract SVG path here as it would require rendering the component
 			};
 		} catch (error) {
