@@ -1,5 +1,4 @@
 // Service to interact with react-icons library
-import * as iconPackages from "react-icons";
 import {iconsLib} from "./data.js";
 import {Logger} from "~/server.js";
 
@@ -21,8 +20,34 @@ export type IconLibraryInfo = {
 
 export class IconService {
 	private iconLibraries: IconLibraryInfo[] = iconsLib;
+	private iconCache: Record<string, IconMetadata[]> = {};
 
-	constructor() {}
+	constructor() {
+		// Pre-cache common icon packages for faster access
+		this.preloadCommonPackages();
+	}
+
+	private async preloadCommonPackages() {
+		// Pre-load commonly used packages to reduce latency
+		const commonPackages = ["fa", "md", "io", "bs", "fi"];
+		for (const pkg of commonPackages) {
+			try {
+				await this.loadIconPackage(pkg);
+			} catch (error) {
+				Logger.error(`Failed to preload icon package ${pkg}:`, error);
+			}
+		}
+	}
+
+	private async loadIconPackage(packagePrefix: string): Promise<any> {
+		try {
+			// Use dynamic import to load the icon package
+			return await import(`react-icons/${packagePrefix}`);
+		} catch (error) {
+			Logger.error(`Error loading icon package ${packagePrefix}:`, error);
+			return null;
+		}
+	}
 
 	getIconLibraries(): IconLibraryInfo[] {
 		return this.iconLibraries;
@@ -32,39 +57,60 @@ export class IconService {
 		return this.iconLibraries.find(lib => lib.prefix === prefix);
 	}
 
-	getIconsFromPackage(packagePrefix: string): IconMetadata[] {
+	async getIconsFromPackage(packagePrefix: string): Promise<IconMetadata[]> {
 		Logger.log(`Fetching icons from package: ${packagePrefix}`, "IconService");
-		// Get all exported items from the package
-		const packageKey = packagePrefix as keyof typeof iconPackages;
-		if (!iconPackages[packageKey]) {
-			return [];
+
+		// Return cached icons if available
+		if (this.iconCache[packagePrefix]) {
+			return this.iconCache[packagePrefix];
 		}
 
 		const icons: IconMetadata[] = [];
-		const iconPackage = iconPackages[packageKey];
+		try {
+			// Dynamically import the package
+			const iconPackage = await this.loadIconPackage(packagePrefix);
 
-		// Filter out the actual icon exports (excluding internal utilities, etc.)
-		for (const key in iconPackage) {
-			if (key.startsWith(packagePrefix.toUpperCase())) {
-				icons.push({
-					packageName: packagePrefix,
-					iconName: key,
-					fullName: `${packagePrefix}/${key}`,
-				});
+			if (!iconPackage) {
+				return [];
 			}
-		}
 
-		return icons;
+			// Filter out the actual icon exports (excluding internal utilities, etc.)
+			for (const key in iconPackage) {
+				// Most icon packages follow the pattern of prefixing icon names with the package code
+				if (
+					key.startsWith(packagePrefix.toUpperCase()) ||
+					// Handle special cases like Font Awesome which uses Fa prefix
+					(packagePrefix === "fa" && key.startsWith("Fa")) ||
+					(packagePrefix === "fa6" && key.startsWith("Fa")) ||
+					// Material Design uses Md prefix
+					(packagePrefix === "md" && key.startsWith("Md")) ||
+					// Ionicons uses Io prefix
+					(packagePrefix === "io" && key.startsWith("Io")) ||
+					(packagePrefix === "io5" && key.startsWith("Io"))
+				) {
+					icons.push({
+						packageName: packagePrefix,
+						iconName: key,
+						fullName: `${packagePrefix}/${key}`,
+					});
+				}
+			}
+
+			// Cache the results
+			this.iconCache[packagePrefix] = icons;
+
+			return icons;
+		} catch (error) {
+			Logger.error(`Error fetching icons from package ${packagePrefix}:`, error);
+			return [];
+		}
 	}
 
-	searchIcons(query: string): IconMetadata[] {
+	async searchIcons(query: string): Promise<IconMetadata[]> {
 		const results: IconMetadata[] = [];
 
 		// Normalize query
 		const normalizedQuery = query.toLowerCase();
-
-		// Check if query specifies a package prefix
-		let targetPackage: string | null = null;
 
 		// Check if query is in format "prefix:iconname"
 		const prefixMatch = normalizedQuery.match(/^([a-z0-9]+):(.*)/);
@@ -74,51 +120,60 @@ export class IconService {
 			const library = this.getLibraryByPrefix(prefix);
 
 			if (library) {
-				targetPackage = prefix;
-				const packageIcons = this.getIconsFromPackage(targetPackage);
+				// Get icons from the specific package
+				const packageIcons = await this.getIconsFromPackage(prefix);
 
-				console.log(packageIcons);
 				// Filter icons by the query after the colon
 				return packageIcons.filter(icon => icon.iconName.toLowerCase().includes(iconQuery.trim()));
 			}
 		}
 
 		// If no specific package or package not found, search all packages
-		for (const library of this.iconLibraries) {
-			const packageIcons = this.getIconsFromPackage(library.prefix);
+		// Start with most commonly used packages for better user experience
+		const priorityPackages = ["fa", "md", "io", "bs", "fi", "hi"];
+		const otherPackages = this.iconLibraries.map(lib => lib.prefix).filter(prefix => !priorityPackages.includes(prefix));
 
-			// Add matching icons to results
-			const matches = packageIcons.filter(icon => icon.iconName.toLowerCase().includes(normalizedQuery));
+		const searchOrder = [...priorityPackages, ...otherPackages];
 
-			results.push(...matches);
+		for (const prefix of searchOrder) {
+			try {
+				const packageIcons = await this.getIconsFromPackage(prefix);
 
-			// Limit results to prevent overwhelming responses
-			if (results.length > 100) {
-				break;
+				// Add matching icons to results
+				const matches = packageIcons.filter(icon => icon.iconName.toLowerCase().includes(normalizedQuery));
+
+				results.push(...matches);
+
+				// Limit results to prevent overwhelming responses
+				if (results.length >= 100) {
+					break;
+				}
+			} catch (error) {
+				Logger.error(`Error searching in package ${prefix}:`, error);
 			}
 		}
 
 		return results;
 	}
 
-	getIconDetails(packageName: string, iconName: string): IconMetadata | null {
-		// Check if package exists
-		const packageKey = packageName as keyof typeof iconPackages;
-		if (!iconPackages[packageKey]) {
+	async getIconDetails(packageName: string, iconName: string): Promise<IconMetadata | null> {
+		try {
+			// Load the package dynamically
+			const iconPackage = await this.loadIconPackage(packageName);
+
+			if (!iconPackage || !iconPackage[iconName]) {
+				return null;
+			}
+
+			return {
+				packageName,
+				iconName,
+				fullName: `${packageName}/${iconName}`,
+				// We don't extract SVG path here as it would require rendering the component
+			};
+		} catch (error) {
+			Logger.error(`Error getting icon details for ${packageName}/${iconName}:`, error);
 			return null;
 		}
-
-		// Check if icon exists in package
-		const iconPackage = iconPackages[packageKey];
-		if (!iconPackage[iconName]) {
-			return null;
-		}
-
-		return {
-			packageName,
-			iconName,
-			fullName: `${packageName}/${iconName}`,
-			// We don't extract SVG path here as it would require rendering the component
-		};
 	}
 }

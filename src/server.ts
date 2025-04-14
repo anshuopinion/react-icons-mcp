@@ -74,7 +74,7 @@ export class ReactIconsMcpServer {
 				try {
 					Logger.log(`Searching for icons matching: ${query}`);
 
-					const icons = this.iconService.searchIcons(query);
+					const icons = await this.iconService.searchIcons(query);
 					const limitedIcons = icons.slice(0, limit);
 
 					const yamlResult = yaml.dump(limitedIcons);
@@ -125,7 +125,7 @@ export class ReactIconsMcpServer {
 						};
 					}
 
-					const icons = this.iconService.getIconsFromPackage(libraryPrefix);
+					const icons = await this.iconService.getIconsFromPackage(libraryPrefix);
 					const limitedIcons = icons.slice(0, limit);
 
 					const result = {
@@ -162,7 +162,7 @@ export class ReactIconsMcpServer {
 				try {
 					Logger.log(`Fetching details for icon: ${libraryPrefix}/${iconName}`);
 
-					const iconDetails = this.iconService.getIconDetails(libraryPrefix, iconName);
+					const iconDetails = await this.iconService.getIconDetails(libraryPrefix, iconName);
 
 					if (!iconDetails) {
 						return {
@@ -224,7 +224,7 @@ export class ReactIconsMcpServer {
 							libraryName = library.name;
 
 							// Get a sample icon from the library
-							const icons = this.iconService.getIconsFromPackage(libraryPrefix);
+							const icons = await this.iconService.getIconsFromPackage(libraryPrefix);
 							if (icons.length > 0) {
 								iconExample = icons[0].iconName;
 							}
