@@ -47,6 +47,10 @@ export class ReactIconsMcpServer {
 
 				return {
 					content: [{type: "text", text: yamlResult}],
+					metadata: {
+						timestamp: new Date().toISOString(),
+						libraryCount: libraries.length,
+					},
 				};
 			} catch (error) {
 				const message = error instanceof Error ? error.message : String(error);
