@@ -29,12 +29,9 @@ export async function startServer(): Promise<void> {
 }
 
 // If we're being executed directly (not imported), start the server
-if (import.meta.url) {
-	const currentFilePath = fileURLToPath(import.meta.url);
-	if (process.argv[1] === currentFilePath || process.argv[1].includes("cli.js")) {
-		startServer().catch(error => {
-			console.error("Failed to start server:", error);
-			process.exit(1);
-		});
-	}
+if (process.argv[1]) {
+	startServer().catch(error => {
+		console.error("Failed to start server:", error);
+		process.exit(1);
+	});
 }
