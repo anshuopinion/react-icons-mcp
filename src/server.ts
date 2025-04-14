@@ -23,7 +23,7 @@ export class ReactIconsMcpServer {
 		this.server = new McpServer(
 			{
 				name: "React Icons MCP Server",
-				version: "0.1.0",
+				version: "0.1.1",
 			},
 			{
 				capabilities: {
