@@ -23,7 +23,8 @@
 		"lint": "eslint . --ext .ts",
 		"format": "prettier --write \"src/**/*.ts\"",
 		"prepack": "npm run build",
-		"pub:release": "npm run build && npm publish"
+		"pub:release": "npm run build && npm publish",
+		"test": "node --experimental-vm-modules node_modules/jest/bin/jest.js"
 	},
 	"engines": {
 		"node": ">=18.0.0"
@@ -54,12 +55,16 @@
 		"zod": "^3.22.4"
 	},
 	"devDependencies": {
+		"@types/jest": "^29.5.14",
 		"@types/js-yaml": "^4.0.9",
 		"@types/node": "^20.17.30",
 		"@typescript-eslint/eslint-plugin": "^6.9.0",
 		"@typescript-eslint/parser": "^6.9.0",
 		"eslint": "^8.52.0",
+		"jest": "^29.7.0",
+		"jest-environment-node": "^29.7.0",
 		"prettier": "^3.0.3",
+		"ts-jest": "^29.3.2",
 		"tsup": "^7.2.0",
 		"typescript": "^5.2.2"
 	}
